@@ -3,3 +3,10 @@
 .RData
 .Ruserdata
 *.Rproj
+.DS_Store
+*.Rcheck/
+*.tar.gz
+.claude/
+*.txt
+example/
+AGENTS.md

@@ -6,3 +6,8 @@
 ^LICENSE\.md$
 ^README\.Rmd$
 ^\.github$
+^\.\.Rcheck$
+^\.claude$
+^\.DS_Store$
+^example$
+^.*\.txt$

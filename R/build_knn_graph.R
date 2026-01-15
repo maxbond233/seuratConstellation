@@ -15,6 +15,8 @@ NULL
 #' @param k Integer. Number of nearest neighbors. Default 15
 #' @param knn.outlier.th Numeric. Threshold for outlier detection. Default 2
 #' @param outlier.frac.th Numeric. Fraction threshold for outlier cells. Default 0.5
+#' @param color_by Character. Column name in meta.data for node coloring. Default NULL
+#' @param hull_by Character. Column name in meta.data for hull grouping. Default NULL
 #'
 #' @return A list with class "constellation_knn" containing:
 #'   \item{knn.result}{Raw KNN results from RANN::nn2}
@@ -26,17 +28,21 @@ NULL
 #' @importFrom Seurat Embeddings
 #' @importFrom RANN nn2
 #' @importFrom dplyr %>% mutate arrange
+#' @importFrom stats sd phyper
 #'
 #' @examples
 #' \dontrun{
 #' knn_graph <- build_knn_graph(seu, cluster_col = "celltype", reduction = "umap")
+#' knn_graph <- build_knn_graph(seu, cluster_col = "celltype", color_by = "cell_class")
 #' }
 build_knn_graph <- function(seu,
                             cluster_col,
                             reduction = "umap",
                             k = 15,
                             knn.outlier.th = 2,
-                            outlier.frac.th = 0.5) {
+                            outlier.frac.th = 0.5,
+                            color_by = NULL,
+                            hull_by = NULL) {
 
 
   if (!inherits(seu, "Seurat")) {
@@ -52,6 +58,14 @@ build_knn_graph <- function(seu,
                paste(names(seu@reductions), collapse = ", ")))
   }
 
+  if (!is.null(color_by) && !color_by %in% colnames(seu@meta.data)) {
+    stop(paste("Column", color_by, "not found in meta.data"))
+  }
+
+  if (!is.null(hull_by) && !hull_by %in% colnames(seu@meta.data)) {
+    stop(paste("Column", hull_by, "not found in meta.data"))
+  }
+
   rd.dat <- Seurat::Embeddings(seu, reduction = reduction)
 
   cl_raw <- seu@meta.data[[cluster_col]]
@@ -65,6 +79,22 @@ build_knn_graph <- function(seu,
     cluster_size = as.numeric(table(factor(cl_raw, levels = cl_levels))),
     row.names = seq_along(cl_levels)
   )
+
+  # Extract color_by metadata and compute majority category per cluster
+  color_group <- NULL
+  if (!is.null(color_by)) {
+    color_raw <- seu@meta.data[[color_by]]
+    color_group <- .compute_majority_category(cl_raw, color_raw, cl_levels)
+    cl.df$color_group <- color_group
+  }
+
+  # Extract hull_by metadata and compute majority category per cluster
+  hull_group <- NULL
+  if (!is.null(hull_by)) {
+    hull_raw <- seu@meta.data[[hull_by]]
+    hull_group <- .compute_majority_category(cl_raw, hull_raw, cl_levels)
+    cl.df$hull_group <- hull_group
+  }
 
   knn.result <- RANN::nn2(rd.dat, k = k)
   rownames(knn.result[[1]]) <- rownames(knn.result[[2]]) <- rownames(rd.dat)
@@ -126,7 +156,9 @@ build_knn_graph <- function(seu,
     params = list(
       cluster_col = cluster_col,
       reduction = reduction,
-      k = k
+      k = k,
+      color_by = color_by,
+      hull_by = hull_by
     )
   )
 

@@ -8,8 +8,4 @@
 \description{
 A pipeline-style toolkit for creating constellation plots from Seurat V5 objects. Visualizes cell type relationships based on KNN graph analysis with customizable node sizes, edge widths, and color schemes.
 }
-\author{
-\strong{Maintainer}: Liangxian \email{liangxian@example.com}
-
-}
 \keyword{internal}

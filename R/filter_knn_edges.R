@@ -18,7 +18,7 @@ NULL
 #' @importFrom dplyr filter mutate
 #'
 #' @examples
-#' \dontrun
+#' \dontrun{
 #' knn_graph %>% filter_knn_edges(frac_th = 0.05)
 #' }
 filter_knn_edges <- function(knn_graph, frac_th = 0.05) {

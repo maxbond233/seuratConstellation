@@ -15,6 +15,12 @@ NULL
 #' @param k Integer. Number of nearest neighbors. Default 15
 #' @param frac_th Numeric. Minimum fraction threshold for edges. Default 0.05
 #' @param colors Optional. Named vector of colors, or NULL for auto-generation
+#' @param color_by Character. Column name in meta.data for node coloring. Default NULL
+#' @param color_mode Character. Color mode: "group" or "gradient". Default "group"
+#' @param hull_by Character. Column name in meta.data for hull grouping. Default NULL
+#' @param hull_type Character. Hull type: "none", "convex", or "concave". Default "none"
+#' @param hull_alpha Numeric. Hull transparency (0-1). Default 0.2
+#' @param hull_expand Numeric. Expansion factor for hulls. Default 0.1
 #' @param node.label Character. Column for node labels. Default "cluster_label"
 #' @param exxageration Numeric. Edge width exaggeration. Default 2
 #' @param curved Logical. Curved edges. Default TRUE
@@ -33,14 +39,14 @@ NULL
 #' # Basic usage
 #' ConstellationPlot(seu, cluster_col = "celltype")
 #'
-#' # With custom options
+#' # With group coloring and hulls
 #' ConstellationPlot(
 #'   seu,
 #'   cluster_col = "celltype",
-#'   reduction = "umap",
-#'   frac_th = 0.05,
-#'   label_repel = TRUE,
-#'   node.dodge = TRUE
+#'   color_by = "cell_class",
+#'   hull_by = "cell_class",
+#'   hull_type = "concave",
+#'   label_repel = TRUE
 #' )
 #' }
 ConstellationPlot <- function(seu,
@@ -49,6 +55,12 @@ ConstellationPlot <- function(seu,
                               k = 15,
                               frac_th = 0.05,
                               colors = NULL,
+                              color_by = NULL,
+                              color_mode = "group",
+                              hull_by = NULL,
+                              hull_type = "none",
+                              hull_alpha = 0.2,
+                              hull_expand = 0.1,
                               node.label = "cluster_label",
                               exxageration = 2,
                               curved = TRUE,
@@ -62,12 +74,18 @@ ConstellationPlot <- function(seu,
     seu = seu,
     cluster_col = cluster_col,
     reduction = reduction,
-    k = k
+    k = k,
+    color_by = color_by,
+    hull_by = hull_by
   )
 
   knn_graph <- filter_knn_edges(knn_graph, frac_th = frac_th)
 
-  knn_graph <- compute_cluster_centers(knn_graph, colors = colors)
+  knn_graph <- compute_cluster_centers(
+    knn_graph,
+    colors = colors,
+    color_mode = color_mode
+  )
 
   plot_constellation(
     knn_graph,
@@ -78,6 +96,9 @@ ConstellationPlot <- function(seu,
     label.size = label.size,
     max_size = max_size,
     label_repel = label_repel,
-    node_trans = node_trans
+    node_trans = node_trans,
+    hull_type = hull_type,
+    hull_alpha = hull_alpha,
+    hull_expand = hull_expand
   )
 }

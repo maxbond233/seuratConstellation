@@ -23,8 +23,8 @@
 
 # Global variables to avoid R CMD check notes
 utils::globalVariables(c(
-
   "x", "y", "cl", "cluster_size", "cluster_color",
   "cluster_label", "cluster_id", "node.width",
-  "frac", "cl.from", "cl.to", "Group", ".data"
+  "frac", "cl.from", "cl.to", "Group", ".data",
+  "hull_group", "hull_color", "feature_value"
 ))

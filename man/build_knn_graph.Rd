@@ -10,7 +10,9 @@ build_knn_graph(
   reduction = "umap",
   k = 15,
   knn.outlier.th = 2,
-  outlier.frac.th = 0.5
+  outlier.frac.th = 0.5,
+  color_by = NULL,
+  hull_by = NULL
 )
 }
 \arguments{
@@ -25,6 +27,10 @@ build_knn_graph(
 \item{knn.outlier.th}{Numeric. Threshold for outlier detection. Default 2}
 
 \item{outlier.frac.th}{Numeric. Fraction threshold for outlier cells. Default 0.5}
+
+\item{color_by}{Character. Column name in meta.data for node coloring. Default NULL}
+
+\item{hull_by}{Character. Column name in meta.data for hull grouping. Default NULL}
 }
 \value{
 A list with class "constellation_knn" containing:
@@ -43,5 +49,6 @@ and cluster information to compute inter-cluster connectivity.
 \examples{
 \dontrun{
 knn_graph <- build_knn_graph(seu, cluster_col = "celltype", reduction = "umap")
+knn_graph <- build_knn_graph(seu, cluster_col = "celltype", color_by = "cell_class")
 }
 }

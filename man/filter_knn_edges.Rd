@@ -21,3 +21,8 @@ Filters edges in a KNN graph based on the fraction of
 connections between clusters. This is useful for removing weak
 connections before visualization.
 }
+\examples{
+\dontrun{
+knn_graph \%>\% filter_knn_edges(frac_th = 0.05)
+}
+}

@@ -261,6 +261,9 @@ NULL
 #' @param max_size Numeric. Maximum node size. Default 10
 #' @param label_repel Logical. Use ggrepel for labels. Default FALSE
 #' @param node_trans Character. Size transformation. Default "sqrt"
+#' @param hull_type Character. Hull type: "none", "convex", or "concave". Default "none"
+#' @param hull_alpha Numeric. Hull transparency (0-1). Default 0.2
+#' @param hull_expand Numeric. Expansion factor for hulls. Default 0.1
 #'
 #' @return A ggplot object
 #'
@@ -268,14 +271,16 @@ NULL
 #' @importFrom ggplot2 ggplot aes geom_point geom_polygon geom_text
 #' @importFrom ggplot2 scale_size_area scale_color_identity theme_void theme
 #' @importFrom ggrepel geom_text_repel
+#' @importFrom stats dist
+#' @importFrom scales alpha
 #'
 #' @examples
 #' \dontrun{
 #' seu %>%
-#'   build_knn_graph(cluster_col = "celltype") %>%
+#'   build_knn_graph(cluster_col = "celltype", hull_by = "cell_class") %>%
 #'   filter_knn_edges(frac_th = 0.05) %>%
 #'   compute_cluster_centers() %>%
-#'   plot_constellation(label_repel = TRUE)
+#'   plot_constellation(hull_type = "concave", label_repel = TRUE)
 #' }
 plot_constellation <- function(knn_graph,
                                node.label = "cluster_label",
@@ -285,7 +290,10 @@ plot_constellation <- function(knn_graph,
                                label.size = 5,
                                max_size = 10,
                                label_repel = FALSE,
-                               node_trans = "sqrt") {
+                               node_trans = "sqrt",
+                               hull_type = "none",
+                               hull_alpha = 0.2,
+                               hull_expand = 0.1) {
 
   if (!inherits(knn_graph, "constellation_knn")) {
     stop("Input must be a constellation_knn object")
@@ -317,8 +325,16 @@ plot_constellation <- function(knn_graph,
     poly.Edges <- data.frame(x = numeric(), y = numeric(), Group = character())
   }
 
+  # Compute hulls if hull_type is specified and hull_group exists
+
+  hull_data <- NULL
+  if (hull_type != "none" && "hull_group" %in% colnames(nodes)) {
+    hull_data <- .compute_hulls(nodes, hull_type, hull_expand)
+  }
+
   plot.all <- .build_plot(nodes, poly.Edges, node.label, label.size,
-                          max_size, node_trans, label_repel)
+                          max_size, node_trans, label_repel,
+                          hull_data, hull_alpha)
 
   return(plot.all)
 }
@@ -326,9 +342,21 @@ plot_constellation <- function(knn_graph,
 #' Build the final plot
 #' @keywords internal
 .build_plot <- function(nodes, poly.Edges, node.label, label.size,
-                        max_size, node_trans, label_repel) {
+                        max_size, node_trans, label_repel,
+                        hull_data = NULL, hull_alpha = 0.2) {
 
   plot.all <- ggplot2::ggplot()
+
+  # Draw hulls first (background layer)
+  if (!is.null(hull_data) && nrow(hull_data) > 0) {
+    plot.all <- plot.all +
+      ggplot2::geom_polygon(
+        data = hull_data,
+        ggplot2::aes(x = x, y = y, group = hull_group, fill = hull_color),
+        alpha = hull_alpha
+      ) +
+      ggplot2::scale_fill_identity()
+  }
 
   if (nrow(poly.Edges) > 0) {
     plot.all <- plot.all +

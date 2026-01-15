@@ -1,32 +1,29 @@
 Package: seuratConstellation
 Title: Constellation Plot for Seurat V5 Objects
 Version: 0.1.0
-Authors@R:
-    person("Liangxian", "", email = "liangxian@example.com", role = c("aut", "cre"))
+Author: Liangxian Developer
+Maintainer: Liangxian Developer <liangxian@example.com>
 Description: A pipeline-style toolkit for creating constellation plots from Seurat V5
     objects. Visualizes cell type relationships based on KNN graph analysis with
     customizable node sizes, edge widths, and color schemes.
 License: MIT + file LICENSE
 Encoding: UTF-8
 Roxygen: list(markdown = TRUE)
-RoxygenNote: 7.3.2
+RoxygenNote: 7.3.3
 Depends:
     R (>= 4.0.0)
 Imports:
     Seurat (>= 5.0.0),
-    SeuratObject,
     ggplot2,
     ggrepel,
-    ggforce,
     dplyr,
-    tidyr,
     RANN,
-    gridExtra,
-    cowplot,
     scales,
-    methods
+    grDevices,
+    Hmisc
 Suggests:
     testthat (>= 3.0.0),
     knitr,
-    rmarkdown
+    rmarkdown,
+    concaveman
 Config/testthat/edition: 3

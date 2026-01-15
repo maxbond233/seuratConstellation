@@ -11,7 +11,9 @@
   label.size,
   max_size,
   node_trans,
-  label_repel
+  label_repel,
+  hull_data = NULL,
+  hull_alpha = 0.2
 )
 }
 \description{
