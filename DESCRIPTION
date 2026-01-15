@@ -1,6 +1,6 @@
 Package: seuratConstellation
 Title: Constellation Plot for Seurat V5 Objects
-Version: 0.1.0
+Version: 0.2.0
 Author: Liangxian Developer
 Maintainer: Liangxian Developer <liangxian@example.com>
 Description: A pipeline-style toolkit for creating constellation plots from Seurat V5
