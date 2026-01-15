@@ -19,6 +19,9 @@ This package is inspired by and adapted from the constellation plot functionalit
 - **Self-contained**: Implements KNN prediction internally (no scrattch.hicat dependency)
 - **Customizable**: Extensive options for colors, labels, node sizes, and edge styling
 - **ggplot2 Output**: Returns ggplot objects for further customization
+- **Metadata-based Coloring**: Color nodes by any metadata column (v0.2.0+)
+- **Hull Visualization**: Draw convex/concave hulls to group related clusters (v0.2.0+)
+- **Feature Expression**: Visualize gene expression on constellation plots (v0.2.0+)
 
 ## Installation
 
@@ -47,13 +50,14 @@ devtools::load_all("/path/to/seuratConstellation")
 - Seurat (>= 5.0.0)
 - ggplot2
 - ggrepel
-- ggforce
 - dplyr
 - RANN
 - Hmisc
-- gridExtra
-- cowplot
 - scales
+- grDevices
+
+**Optional** (for concave hulls):
+- concaveman
 
 ## Quick Start
 
@@ -136,6 +140,50 @@ p <- seu %>%
   plot_constellation(label_repel = TRUE)
 ```
 
+### Metadata-based Coloring (v0.2.0+)
+
+Color nodes based on another metadata column:
+
+```r
+# Color by cell_class, group clusters by the same class
+p <- ConstellationPlot(
+  seu,
+  cluster_col = "celltype",
+  color_by = "cell_class",
+  color_mode = "group"  # or "gradient" for color shades
+)
+```
+
+### Hull Visualization (v0.2.0+)
+
+Draw background hulls to group related clusters:
+
+```r
+p <- ConstellationPlot(
+  seu,
+  cluster_col = "celltype",
+  color_by = "cell_class",
+  hull_by = "cell_class",
+  hull_type = "concave",  # or "convex"
+  hull_alpha = 0.2
+)
+```
+
+### Gene Expression Visualization (v0.2.0+)
+
+```r
+# Color nodes by gene expression
+p <- seu %>%
+  build_knn_graph(cluster_col = "celltype") %>%
+  filter_knn_edges(frac_th = 0.05) %>%
+  compute_cluster_centers() %>%
+  plot_constellation_feature(seu, feature = "MS4A1")
+
+# Different statistics
+plot_constellation_feature(seu, feature = "CD3E", feature_stat = "avg")
+plot_constellation_feature(seu, feature = "CD3E", feature_stat = "pct")
+```
+
 ## Function Reference
 
 ### Core Functions
@@ -147,6 +195,7 @@ p <- seu %>%
 | `filter_knn_edges()` | Filter edges by fraction threshold |
 | `compute_cluster_centers()` | Calculate cluster centroid coordinates |
 | `plot_constellation()` | Generate the constellation plot |
+| `plot_constellation_feature()` | Visualize gene expression on constellation plot (v0.2.0+) |
 
 ### Key Parameters
 
@@ -160,6 +209,8 @@ p <- seu %>%
 | `k` | integer | 15 | Number of nearest neighbors |
 | `knn.outlier.th` | numeric | 2 | Outlier detection threshold |
 | `outlier.frac.th` | numeric | 0.5 | Fraction threshold for outlier cells |
+| `color_by` | character | NULL | Metadata column for node coloring (v0.2.0+) |
+| `hull_by` | character | NULL | Metadata column for hull grouping (v0.2.0+) |
 
 #### `filter_knn_edges()`
 
@@ -174,6 +225,7 @@ p <- seu %>%
 |-----------|------|---------|-------------|
 | `knn_graph` | constellation_knn | required | Output from previous step |
 | `colors` | named vector | NULL | Custom colors; NULL for auto-generation |
+| `color_mode` | character | "group" | Color mode: "group" (uniform) or "gradient" (shades) (v0.2.0+) |
 
 #### `plot_constellation()`
 
@@ -188,6 +240,20 @@ p <- seu %>%
 | `max_size` | numeric | 10 | Maximum node size |
 | `label_repel` | logical | FALSE | Use ggrepel for non-overlapping labels |
 | `node_trans` | character | "sqrt" | Size transformation ("sqrt", "identity", "log10") |
+| `hull_type` | character | "convex" | Hull type: "convex" or "concave" (v0.2.0+) |
+| `hull_alpha` | numeric | 0.2 | Hull fill transparency (v0.2.0+) |
+| `hull_expand` | numeric | 0.1 | Hull expansion factor (v0.2.0+) |
+
+#### `plot_constellation_feature()` (v0.2.0+)
+
+| Parameter | Type | Default | Description |
+|-----------|------|---------|-------------|
+| `knn_graph` | constellation_knn | required | Output from previous step |
+| `seu` | Seurat | required | Seurat V5 object |
+| `feature` | character | required | Gene name to visualize |
+| `feature_stat` | character | "mean" | Statistic: "mean", "median", "avg", or "pct" |
+| `low_color` | character | "lightgrey" | Color for low expression |
+| `high_color` | character | "darkred" | Color for high expression |
 
 ## Understanding the Plot
 
