@@ -14,16 +14,17 @@ This package is inspired by and adapted from the constellation plot functionalit
 
 AI contributors (tooling support): Codex CLI, Gemini CLI.
 
-## Features
+## Features (v0.2.1)
 
 - **Seurat V5 Compatible**: Direct input from Seurat objects
 - **Pipeline-style API**: Supports `%>%` pipe operations for flexible workflows
 - **Self-contained**: Implements KNN prediction internally (no scrattch.hicat dependency)
 - **Customizable**: Extensive options for colors, labels, node sizes, and edge styling
 - **ggplot2 Output**: Returns ggplot objects for further customization
-- **Metadata-based Coloring**: Color nodes by any metadata column (v0.2.0+)
-- **Hull Visualization**: Draw convex/concave hulls to group related clusters (v0.2.0+)
-- **Feature Expression**: Visualize gene expression on constellation plots (v0.2.0+)
+- **Explicit Grouping**: Separate group assignment from graph building
+- **Explicit Color Resolution**: Predictable color precedence rules
+- **Hull Visualization**: Draw convex/concave hulls to group related clusters
+- **Feature Expression**: Visualize gene expression on constellation plots
 
 ## Installation
 
@@ -125,10 +126,10 @@ p <- ConstellationPlot(
 )
 ```
 
-### Custom Colors
+### Custom Cluster Colors
 
 ```r
-# Define custom colors for each cluster
+# Define custom colors for each cluster (names must match cluster_label)
 my_colors <- c(
   "Excitatory" = "#E41A1C",
   "Inhibitory" = "#377EB8",
@@ -145,22 +146,23 @@ p <- seu %>%
   plot_constellation(label_repel = TRUE)
 ```
 
-### Metadata-based Coloring (v0.2.0+)
+### Group-Based Coloring
 
 Color nodes based on another metadata column:
 
 ```r
-# Color by cell_class, group clusters by the same class
 p <- seu %>%
   build_knn_graph(cluster_col = "celltype") %>%
   filter_knn_edges(frac_th = 0.05) %>%
   compute_cluster_centers() %>%
   assign_cluster_groups(seu, group_by = "cell_class", group_type = "color") %>%
-  resolve_cluster_colors(color_mode = "group") %>% # or "gradient"
+  resolve_cluster_colors(color_mode = "group") %>%
   plot_constellation(label_repel = TRUE)
 ```
 
-### Hull Visualization (v0.2.0+)
+Use `color_mode = "gradient"` to generate shades within each group.
+
+### Hull Visualization
 
 Draw background hulls to group related clusters:
 
@@ -175,7 +177,7 @@ p <- seu %>%
   plot_constellation(hull_type = "concave", hull_alpha = 0.2)
 ```
 
-### Gene Expression Visualization (v0.2.0+)
+### Gene Expression Visualization
 
 ```r
 # Color nodes by gene expression
@@ -183,6 +185,7 @@ p <- seu %>%
   build_knn_graph(cluster_col = "celltype") %>%
   filter_knn_edges(frac_th = 0.05) %>%
   compute_cluster_centers() %>%
+  resolve_cluster_colors() %>%
   plot_constellation_feature(seu, feature = "MS4A1")
 
 # Different statistics
@@ -203,7 +206,7 @@ plot_constellation_feature(seu, feature = "CD3E", feature_stat = "pct")
 | `assign_cluster_groups()` | Map clusters to metadata groups |
 | `resolve_cluster_colors()` | Resolve cluster colors with explicit precedence |
 | `plot_constellation()` | Generate the constellation plot |
-| `plot_constellation_feature()` | Visualize gene expression on constellation plot (v0.2.0+) |
+| `plot_constellation_feature()` | Visualize gene expression on constellation plot |
 
 ### Key Parameters
 
@@ -217,123 +220,32 @@ plot_constellation_feature(seu, feature = "CD3E", feature_stat = "pct")
 | `k` | integer | 15 | Number of nearest neighbors |
 | `knn.outlier.th` | numeric | 2 | Outlier detection threshold |
 | `outlier.frac.th` | numeric | 0.5 | Fraction threshold for outlier cells |
-| `color_by` | character | NULL | Metadata column for node coloring (deprecated; use `assign_cluster_groups`) |
-| `hull_by` | character | NULL | Metadata column for hull grouping (deprecated; use `assign_cluster_groups`) |
+| `color_by` | character | NULL | Deprecated; use `assign_cluster_groups()` |
+| `hull_by` | character | NULL | Deprecated; use `assign_cluster_groups()` |
 
-#### `filter_knn_edges()`
-
-| Parameter | Type | Default | Description |
-|-----------|------|---------|-------------|
-| `knn_graph` | constellation_knn | required | Output from `build_knn_graph()` |
-| `frac_th` | numeric | 0.05 | Minimum edge fraction to keep |
-
-#### `compute_cluster_centers()`
+#### `assign_cluster_groups()`
 
 | Parameter | Type | Default | Description |
 |-----------|------|---------|-------------|
-| `knn_graph` | constellation_knn | required | Output from previous step |
-| `colors` | named vector | NULL | Custom colors; NULL for auto-generation |
-| `color_mode` | character | "group" | Color mode: "group" (uniform) or "gradient" (shades) (v0.2.0+) |
+| `seu` | Seurat | required | Seurat V5 object (same one used in build) |
+| `group_by` | character | required | Metadata column to group by |
+| `group_type` | character | "color" | Grouping target: "color" or "hull" |
+| `strategy` | character | "majority" | Grouping strategy: "majority", "strict", or "manual" |
 
-#### `plot_constellation()`
-
-| Parameter | Type | Default | Description |
-|-----------|------|---------|-------------|
-| `knn_graph` | constellation_knn | required | Output from previous step |
-| `node.label` | character | "cluster_label" | Column for node labels |
-| `exxageration` | numeric | 2 | Edge width exaggeration factor |
-| `curved` | logical | TRUE | Whether edges should be curved |
-| `node.dodge` | logical | FALSE | Dodge overlapping nodes |
-| `label.size` | numeric | 5 | Size of node labels |
-| `max_size` | numeric | 10 | Maximum node size |
-| `label_repel` | logical | FALSE | Use ggrepel for non-overlapping labels |
-| `node_trans` | character | "sqrt" | Size transformation ("sqrt", "identity", "log10") |
-| `hull_type` | character | "convex" | Hull type: "convex" or "concave" (v0.2.0+) |
-| `hull_alpha` | numeric | 0.2 | Hull fill transparency (v0.2.0+) |
-| `hull_expand` | numeric | 0.1 | Hull expansion factor (v0.2.0+) |
-
-#### `plot_constellation_feature()` (v0.2.0+)
+#### `resolve_cluster_colors()`
 
 | Parameter | Type | Default | Description |
 |-----------|------|---------|-------------|
-| `knn_graph` | constellation_knn | required | Output from previous step |
-| `seu` | Seurat | required | Seurat V5 object |
-| `feature` | character | required | Gene name to visualize |
-| `feature_stat` | character | "mean" | Statistic: "mean", "median", "avg", or "pct" |
-| `low_color` | character | "lightgrey" | Color for low expression |
-| `high_color` | character | "darkred" | Color for high expression |
+| `cluster_colors` | named vector | NULL | Colors by cluster_label |
+| `group_colors` | named vector | NULL | Colors by group label |
+| `color_mode` | character | "group" | "group" or "gradient" |
 
-## Understanding the Plot
+## Migration Notes (v0.2.1)
 
-A constellation plot visualizes:
+- `compute_cluster_centers(colors = ..., color_mode = ...)` is deprecated. Use `resolve_cluster_colors()` instead.
+- `build_knn_graph(color_by = ..., hull_by = ...)` is deprecated. Use `assign_cluster_groups()` instead.
+- `plot_constellation()` now requires colors to be resolved beforehand with `resolve_cluster_colors()`.
 
-- **Nodes**: Each node represents a cell cluster
-  - **Size**: Proportional to the number of cells in the cluster
-  - **Color**: User-defined or auto-generated
+## Changelog (short)
 
-- **Edges**: Connections between clusters based on KNN relationships
-  - **Width**: Proportional to the fraction of KNN connections between clusters
-  - **Direction**: Edges can be bidirectional or unidirectional
-
-## Advanced Usage
-
-### Combining with ggplot2
-
-Since the output is a ggplot object, you can further customize it:
-
-```r
-p <- ConstellationPlot(seu, cluster_col = "celltype")
-
-# Add title and customize theme
-p +
-  ggtitle("Cell Type Constellation") +
-  theme(plot.title = element_text(hjust = 0.5, size = 16))
-```
-
-### Using Different Reductions
-
-```r
-# Use tSNE instead of UMAP
-p_tsne <- ConstellationPlot(
-  seu,
-  cluster_col = "celltype",
-  reduction = "tsne"
-)
-
-# Use PCA
-p_pca <- ConstellationPlot(
-  seu,
-  cluster_col = "celltype",
-  reduction = "pca"
-)
-```
-
-## Citation
-
-If you use this package, please cite:
-
-1. **This package**:
-   ```
-   seuratConstellation: Constellation Plot Visualization for Seurat V5 Objects
-   https://github.com/username/seuratConstellation
-   ```
-
-2. **Original scrattch.hicat package**:
-   ```
-   Tasic B, et al. (2018). Shared and distinct transcriptomic cell types across
-   neocortical areas. Nature, 563(7729), 72-78.
-   
-   GitHub: https://github.com/AllenInstitute/scrattch.hicat
-   ```
-
-## License
-
-MIT License - see [LICENSE](LICENSE) file for details.
-
-## Contributing
-
-Contributions are welcome! Please feel free to submit a Pull Request.
-
-## Issues
-
-If you encounter any problems or have suggestions, please open an issue on GitHub.
+- v0.2.1: Split grouping and color resolution into explicit steps (`assign_cluster_groups()`, `resolve_cluster_colors()`), added clearer pipeline examples, and documented deprecations.
