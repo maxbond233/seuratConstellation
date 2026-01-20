@@ -20,7 +20,7 @@ plot_constellation(
 )
 }
 \arguments{
-\item{knn_graph}{A constellation_knn object with cluster centers computed}
+\item{knn_graph}{A constellation_knn object with cluster centers and colors resolved.}
 
 \item{node.label}{Character. Column name for node labels. Default "cluster_label"}
 
@@ -52,14 +52,26 @@ Main plotting function for constellation visualization
 
 Creates a constellation plot visualization from a KNN graph.
 This function is designed to work in a pipeline with build_knn_graph(),
-filter_knn_edges(), and compute_cluster_centers().
+filter_knn_edges(), compute_cluster_centers(), and resolve_cluster_colors().
 }
 \examples{
 \dontrun{
-seu \%>\%
-  build_knn_graph(cluster_col = "celltype", hull_by = "cell_class") \%>\%
-  filter_knn_edges(frac_th = 0.05) \%>\%
-  compute_cluster_centers() \%>\%
+# Complete pipeline
+seu \%>%
+  build_knn_graph(cluster_col = "celltype") \%>%
+  filter_knn_edges(frac_th = 0.05) \%>%
+  compute_cluster_centers() \%>%
+  resolve_cluster_colors() \%>%
+  plot_constellation()
+
+# With group-based coloring and hulls
+seu \%>%
+  build_knn_graph(cluster_col = "celltype") \%>%
+  filter_knn_edges(frac_th = 0.05) \%>%
+  compute_cluster_centers() \%>%
+  assign_cluster_groups(seu, group_by = "cell_class", group_type = "color") \%>%
+  assign_cluster_groups(seu, group_by = "tissue", group_type = "hull") \%>%
+  resolve_cluster_colors(color_mode = "gradient") \%>%
   plot_constellation(hull_type = "concave", label_repel = TRUE)
 }
 }

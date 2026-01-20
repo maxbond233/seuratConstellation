@@ -250,9 +250,12 @@ NULL
 #'
 #' @description Creates a constellation plot visualization from a KNN graph.
 #'   This function is designed to work in a pipeline with build_knn_graph(),
-#'   filter_knn_edges(), and compute_cluster_centers().
+#'   filter_knn_edges(), compute_cluster_centers(), and resolve_cluster_colors().
 #'
-#' @param knn_graph A constellation_knn object with cluster centers computed
+#'   IMPORTANT: This function requires cluster_color to be present in the
+#'   knn_graph object. Call resolve_cluster_colors() before plotting.
+#'
+#' @param knn_graph A constellation_knn object with cluster centers and colors resolved
 #' @param node.label Character. Column name for node labels. Default "cluster_label"
 #' @param exxageration Numeric. Edge width exaggeration factor. Default 2
 #' @param curved Logical. Whether edges should be curved. Default TRUE
@@ -276,10 +279,22 @@ NULL
 #'
 #' @examples
 #' \dontrun{
+#' # Complete pipeline
 #' seu %>%
-#'   build_knn_graph(cluster_col = "celltype", hull_by = "cell_class") %>%
+#'   build_knn_graph(cluster_col = "celltype") %>%
 #'   filter_knn_edges(frac_th = 0.05) %>%
 #'   compute_cluster_centers() %>%
+#'   resolve_cluster_colors() %>%
+#'   plot_constellation()
+#'
+#' # With group-based coloring and hulls
+#' seu %>%
+#'   build_knn_graph(cluster_col = "celltype") %>%
+#'   filter_knn_edges(frac_th = 0.05) %>%
+#'   compute_cluster_centers() %>%
+#'   assign_cluster_groups(seu, group_by = "cell_class", group_type = "color") %>%
+#'   assign_cluster_groups(seu, group_by = "tissue", group_type = "hull") %>%
+#'   resolve_cluster_colors(color_mode = "gradient") %>%
 #'   plot_constellation(hull_type = "concave", label_repel = TRUE)
 #' }
 plot_constellation <- function(knn_graph,
@@ -295,12 +310,32 @@ plot_constellation <- function(knn_graph,
                                hull_alpha = 0.2,
                                hull_expand = 0.1) {
 
+  # Validation
   if (!inherits(knn_graph, "constellation_knn")) {
-    stop("Input must be a constellation_knn object")
+    stop("Input must be a constellation_knn object from build_knn_graph()")
   }
 
   if (is.null(knn_graph$cl.center.df)) {
-    stop("Cluster centers not computed. Run compute_cluster_centers() first.")
+    stop(
+      "Cluster centers not computed.\n",
+      "Run compute_cluster_centers() before plotting."
+    )
+  }
+
+  if (!"cluster_color" %in% colnames(knn_graph$cl.center.df)) {
+    stop(
+      "Cluster colors not resolved.\n",
+      "Run resolve_cluster_colors() before plotting.\n",
+      "Example: knn_graph %>% resolve_cluster_colors() %>% plot_constellation()"
+    )
+  }
+
+  if (hull_type != "none" && !"hull_group" %in% colnames(knn_graph$cl.center.df)) {
+    stop(
+      "hull_type = '", hull_type, "' requires hull_group to be assigned.\n",
+      "Run assign_cluster_groups(knn_graph, seu, group_by = '...', group_type = 'hull') first,\n",
+      "or set hull_type = 'none'."
+    )
   }
 
   knn.cl.df <- knn_graph$knn.cl.df

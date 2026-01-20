@@ -38,7 +38,7 @@ ConstellationPlot(
 
 \item{frac_th}{Numeric. Minimum fraction threshold for edges. Default 0.05}
 
-\item{colors}{Optional. Named vector of colors, or NULL for auto-generation}
+\item{colors}{Optional. Named vector of colors by cluster_label, or NULL for auto-generation}
 
 \item{color_by}{Character. Column name in meta.data for node coloring. Default NULL}
 
@@ -76,7 +76,8 @@ All-in-one function for creating constellation plots from Seurat objects
 
 A convenience wrapper that combines all steps of constellation
 plot creation into a single function call. This is the recommended entry
-point for most users.
+point for most users. The function uses a clearer pipeline with explicit
+color resolution.
 }
 \examples{
 \dontrun{
@@ -91,6 +92,13 @@ ConstellationPlot(
   hull_by = "cell_class",
   hull_type = "concave",
   label_repel = TRUE
+)
+
+# Custom cluster colors
+ConstellationPlot(
+  seu,
+  cluster_col = "celltype",
+  colors = c("T cell" = "red", "B cell" = "blue")
 )
 }
 }

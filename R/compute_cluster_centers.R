@@ -6,31 +6,52 @@ NULL
 #' Compute Cluster Centers
 #'
 #' @description Calculates the centroid coordinates for each cluster based on
-#'   dimensional reduction embeddings. Supports custom colors or auto-generation
-#'   with group-based coloring modes.
+#'   dimensional reduction embeddings. This is a pure geometry computation step
+#'   that does not handle colors. Use resolve_cluster_colors() to assign colors.
 #'
 #' @param knn_graph A constellation_knn object from build_knn_graph()
-#' @param colors Optional. Named vector of colors for clusters, or NULL for auto
-#' @param color_mode Character. Color mode: "group" for uniform group colors,
-#'   "gradient" for similar shades within groups. Default "group"
+#' @param colors DEPRECATED. Use resolve_cluster_colors() instead
+#' @param color_mode DEPRECATED. Use resolve_cluster_colors() instead
 #'
 #' @return A constellation_knn object with cluster center coordinates added
 #'
 #' @export
 #' @importFrom dplyr group_by summarise
-#' @importFrom scales hue_pal
-#' @importFrom grDevices colorRampPalette col2rgb rgb
 #'
 #' @examples
 #' \dontrun{
-#' knn_graph %>% compute_cluster_centers()
-#' knn_graph %>% compute_cluster_centers(color_mode = "gradient")
-#' knn_graph %>% compute_cluster_centers(colors = c("A" = "red", "B" = "blue"))
+#' # New workflow (recommended)
+#' knn_graph %>%
+#'   compute_cluster_centers() %>%
+#'   resolve_cluster_colors()
+#'
+#' # With group-based coloring
+#' knn_graph %>%
+#'   compute_cluster_centers() %>%
+#'   assign_cluster_groups(seu, group_by = "cell_class", group_type = "color") %>%
+#'   resolve_cluster_colors(color_mode = "gradient")
 #' }
 compute_cluster_centers <- function(knn_graph, colors = NULL, color_mode = "group") {
 
   if (!inherits(knn_graph, "constellation_knn")) {
     stop("Input must be a constellation_knn object")
+  }
+
+  # Deprecation warnings
+  if (!is.null(colors)) {
+    warning(
+      "The 'colors' parameter is deprecated and will be ignored.\n",
+      "Please use resolve_cluster_colors(knn_graph, cluster_colors = ...) instead.",
+      call. = FALSE
+    )
+  }
+
+  if (!missing(color_mode) && color_mode != "group") {
+    warning(
+      "The 'color_mode' parameter is deprecated and will be ignored.\n",
+      "Please use resolve_cluster_colors(knn_graph, color_mode = ...) instead.",
+      call. = FALSE
+    )
   }
 
   rd.dat <- knn_graph$rd.dat
@@ -52,31 +73,7 @@ compute_cluster_centers <- function(knn_graph, colors = NULL, color_mode = "grou
 
   cl.center.df <- merge(cl_coor, cl.df, by.x = "cl", by.y = "cluster_id")
 
-  # Determine colors based on color_group or custom colors
-  if (!is.null(colors)) {
-    # Use provided colors
-    cl.center.df$cluster_color <- colors[cl.center.df$cluster_label]
-    if (any(is.na(cl.center.df$cluster_color))) {
-      missing <- cl.center.df$cluster_label[is.na(cl.center.df$cluster_color)]
-      n_missing <- length(missing)
-      cl.center.df$cluster_color[is.na(cl.center.df$cluster_color)] <-
-        scales::hue_pal()(n_missing)
-    }
-  } else if ("color_group" %in% colnames(cl.center.df)) {
-    # Use group-based coloring
-    colors <- .assign_group_colors(cl.center.df, color_mode)
-    cl.center.df$cluster_color <- colors
-  } else {
-    # Default: one color per cluster
-    n_clusters <- nrow(cl.center.df)
-    colors <- scales::hue_pal()(n_clusters)
-    names(colors) <- cl.center.df$cluster_label
-    cl.center.df$cluster_color <- colors[cl.center.df$cluster_label]
-  }
-
   knn_graph$cl.center.df <- cl.center.df
-  knn_graph$colors <- colors
-
 
   return(knn_graph)
 }

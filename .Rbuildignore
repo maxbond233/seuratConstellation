@@ -9,5 +9,8 @@
 ^\.\.Rcheck$
 ^\.claude$
 ^\.DS_Store$
+^\.git$
+^\.gitignore$
+^llm/\.DS_Store$
 ^example$
 ^.*\.txt$

@@ -28,9 +28,9 @@ build_knn_graph(
 
 \item{outlier.frac.th}{Numeric. Fraction threshold for outlier cells. Default 0.5}
 
-\item{color_by}{Character. Column name in meta.data for node coloring. Default NULL}
+\item{color_by}{DEPRECATED. Use assign_cluster_groups(group_type = "color").}
 
-\item{hull_by}{Character. Column name in meta.data for hull grouping. Default NULL}
+\item{hull_by}{DEPRECATED. Use assign_cluster_groups(group_type = "hull").}
 }
 \value{
 A list with class "constellation_knn" containing:
@@ -45,6 +45,9 @@ Constructs a KNN graph for constellation plot visualization
 Builds a K-nearest neighbor graph from a Seurat object for
 constellation plot visualization. This function extracts cell embeddings
 and cluster information to compute inter-cluster connectivity.
+
+NOTE: color_by and hull_by are deprecated. Use assign_cluster_groups()
+after building the graph for explicit grouping logic.
 }
 \examples{
 \dontrun{

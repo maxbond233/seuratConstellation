@@ -12,6 +12,8 @@ This package is inspired by and adapted from the constellation plot functionalit
 
 **Original source**: https://github.com/AllenInstitute/scrattch.hicat
 
+AI contributors (tooling support): Codex CLI, Gemini CLI.
+
 ## Features
 
 - **Seurat V5 Compatible**: Direct input from Seurat objects
@@ -96,8 +98,10 @@ p <- seu %>%
   # Step 2: Filter weak edges
   filter_knn_edges(frac_th = 0.05) %>%
   # Step 3: Compute cluster centers
-  compute_cluster_centers(colors = NULL) %>%
-  # Step 4: Create plot
+  compute_cluster_centers() %>%
+  # Step 4: Resolve colors
+  resolve_cluster_colors() %>%
+  # Step 5: Create plot
   plot_constellation(
     node.label = "cluster_label",
     label_repel = TRUE,
@@ -136,7 +140,8 @@ my_colors <- c(
 p <- seu %>%
   build_knn_graph(cluster_col = "celltype") %>%
   filter_knn_edges(frac_th = 0.05) %>%
-  compute_cluster_centers(colors = my_colors) %>%
+  compute_cluster_centers() %>%
+  resolve_cluster_colors(cluster_colors = my_colors) %>%
   plot_constellation(label_repel = TRUE)
 ```
 
@@ -146,12 +151,13 @@ Color nodes based on another metadata column:
 
 ```r
 # Color by cell_class, group clusters by the same class
-p <- ConstellationPlot(
-  seu,
-  cluster_col = "celltype",
-  color_by = "cell_class",
-  color_mode = "group"  # or "gradient" for color shades
-)
+p <- seu %>%
+  build_knn_graph(cluster_col = "celltype") %>%
+  filter_knn_edges(frac_th = 0.05) %>%
+  compute_cluster_centers() %>%
+  assign_cluster_groups(seu, group_by = "cell_class", group_type = "color") %>%
+  resolve_cluster_colors(color_mode = "group") %>% # or "gradient"
+  plot_constellation(label_repel = TRUE)
 ```
 
 ### Hull Visualization (v0.2.0+)
@@ -159,14 +165,14 @@ p <- ConstellationPlot(
 Draw background hulls to group related clusters:
 
 ```r
-p <- ConstellationPlot(
-  seu,
-  cluster_col = "celltype",
-  color_by = "cell_class",
-  hull_by = "cell_class",
-  hull_type = "concave",  # or "convex"
-  hull_alpha = 0.2
-)
+p <- seu %>%
+  build_knn_graph(cluster_col = "celltype") %>%
+  filter_knn_edges(frac_th = 0.05) %>%
+  compute_cluster_centers() %>%
+  assign_cluster_groups(seu, group_by = "cell_class", group_type = "color") %>%
+  assign_cluster_groups(seu, group_by = "cell_class", group_type = "hull") %>%
+  resolve_cluster_colors(color_mode = "group") %>%
+  plot_constellation(hull_type = "concave", hull_alpha = 0.2)
 ```
 
 ### Gene Expression Visualization (v0.2.0+)
@@ -194,6 +200,8 @@ plot_constellation_feature(seu, feature = "CD3E", feature_stat = "pct")
 | `build_knn_graph()` | Build KNN graph from Seurat object |
 | `filter_knn_edges()` | Filter edges by fraction threshold |
 | `compute_cluster_centers()` | Calculate cluster centroid coordinates |
+| `assign_cluster_groups()` | Map clusters to metadata groups |
+| `resolve_cluster_colors()` | Resolve cluster colors with explicit precedence |
 | `plot_constellation()` | Generate the constellation plot |
 | `plot_constellation_feature()` | Visualize gene expression on constellation plot (v0.2.0+) |
 
@@ -209,8 +217,8 @@ plot_constellation_feature(seu, feature = "CD3E", feature_stat = "pct")
 | `k` | integer | 15 | Number of nearest neighbors |
 | `knn.outlier.th` | numeric | 2 | Outlier detection threshold |
 | `outlier.frac.th` | numeric | 0.5 | Fraction threshold for outlier cells |
-| `color_by` | character | NULL | Metadata column for node coloring (v0.2.0+) |
-| `hull_by` | character | NULL | Metadata column for hull grouping (v0.2.0+) |
+| `color_by` | character | NULL | Metadata column for node coloring (deprecated; use `assign_cluster_groups`) |
+| `hull_by` | character | NULL | Metadata column for hull grouping (deprecated; use `assign_cluster_groups`) |
 
 #### `filter_knn_edges()`
 

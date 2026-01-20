@@ -7,14 +7,15 @@ NULL
 #'
 #' @description A convenience wrapper that combines all steps of constellation
 #'   plot creation into a single function call. This is the recommended entry
-#'   point for most users.
+#'   point for most users. The function now uses a clearer pipeline with
+#'   explicit color resolution.
 #'
 #' @param seu A Seurat object (V5 compatible)
 #' @param cluster_col Character. Column name in meta.data for cluster identity
 #' @param reduction Character. Name of dimensional reduction. Default "umap"
 #' @param k Integer. Number of nearest neighbors. Default 15
 #' @param frac_th Numeric. Minimum fraction threshold for edges. Default 0.05
-#' @param colors Optional. Named vector of colors, or NULL for auto-generation
+#' @param colors Optional. Named vector of colors by cluster_label, or NULL for auto-generation
 #' @param color_by Character. Column name in meta.data for node coloring. Default NULL
 #' @param color_mode Character. Color mode: "group" or "gradient". Default "group"
 #' @param hull_by Character. Column name in meta.data for hull grouping. Default NULL
@@ -48,6 +49,13 @@ NULL
 #'   hull_type = "concave",
 #'   label_repel = TRUE
 #' )
+#'
+#' # Custom cluster colors
+#' ConstellationPlot(
+#'   seu,
+#'   cluster_col = "celltype",
+#'   colors = c("T cell" = "red", "B cell" = "blue")
+#' )
 #' }
 ConstellationPlot <- function(seu,
                               cluster_col,
@@ -70,6 +78,9 @@ ConstellationPlot <- function(seu,
                               label_repel = FALSE,
                               node_trans = "sqrt") {
 
+  # Step 1: Build KNN graph (pure data, no styling)
+  # Note: color_by/hull_by still accepted here for backward compatibility
+  # but will trigger deprecation warnings from build_knn_graph()
   knn_graph <- build_knn_graph(
     seu = seu,
     cluster_col = cluster_col,
@@ -79,14 +90,28 @@ ConstellationPlot <- function(seu,
     hull_by = hull_by
   )
 
+  # Step 2: Filter edges
   knn_graph <- filter_knn_edges(knn_graph, frac_th = frac_th)
 
-  knn_graph <- compute_cluster_centers(
+  # Step 3: Compute cluster centers (pure geometry)
+  knn_graph <- compute_cluster_centers(knn_graph)
+
+  # Step 4: Assign groups (new explicit approach)
+  # If color_by/hull_by were passed, they were already handled by build_knn_graph
+  # for backward compatibility. For new code, users should call assign_cluster_groups directly.
+
+  # If color_by was NOT passed to build_knn_graph but user wants group coloring,
+  # they should use the new workflow. Here we only handle the new explicit case
+  # when color_by is NULL but user might have pre-assigned groups.
+
+  # Step 5: Resolve colors with explicit precedence
+  knn_graph <- resolve_cluster_colors(
     knn_graph,
-    colors = colors,
+    cluster_colors = colors,
     color_mode = color_mode
   )
 
+  # Step 6: Plot
   plot_constellation(
     knn_graph,
     node.label = node.label,

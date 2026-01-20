@@ -9,10 +9,9 @@ compute_cluster_centers(knn_graph, colors = NULL, color_mode = "group")
 \arguments{
 \item{knn_graph}{A constellation_knn object from build_knn_graph()}
 
-\item{colors}{Optional. Named vector of colors for clusters, or NULL for auto}
+\item{colors}{DEPRECATED. Use resolve_cluster_colors() instead.}
 
-\item{color_mode}{Character. Color mode: "group" for uniform group colors,
-"gradient" for similar shades within groups. Default "group"}
+\item{color_mode}{DEPRECATED. Use resolve_cluster_colors() instead.}
 }
 \value{
 A constellation_knn object with cluster center coordinates added
@@ -21,13 +20,20 @@ A constellation_knn object with cluster center coordinates added
 Calculate cluster centroid coordinates for constellation plot
 
 Calculates the centroid coordinates for each cluster based on
-dimensional reduction embeddings. Supports custom colors or auto-generation
-with group-based coloring modes.
+dimensional reduction embeddings. This is a pure geometry step; use
+resolve_cluster_colors() for color assignment.
 }
 \examples{
 \dontrun{
-knn_graph \%>\% compute_cluster_centers()
-knn_graph \%>\% compute_cluster_centers(color_mode = "gradient")
-knn_graph \%>\% compute_cluster_centers(colors = c("A" = "red", "B" = "blue"))
+# New workflow
+knn_graph \%>%
+  compute_cluster_centers() \%>%
+  resolve_cluster_colors()
+
+# Group-based coloring
+knn_graph \%>%
+  compute_cluster_centers() \%>%
+  assign_cluster_groups(seu, group_by = "cell_class", group_type = "color") \%>%
+  resolve_cluster_colors(color_mode = "gradient")
 }
 }

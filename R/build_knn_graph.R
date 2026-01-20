@@ -9,19 +9,22 @@ NULL
 #'   constellation plot visualization. This function extracts cell embeddings
 #'   and cluster information to compute inter-cluster connectivity.
 #'
+#'   NOTE: color_by and hull_by parameters are deprecated. Use assign_cluster_groups()
+#'   after building the graph for clearer, more explicit grouping logic.
+#'
 #' @param seu A Seurat object (V5 compatible)
 #' @param cluster_col Character. Column name in meta.data for cluster identity
 #' @param reduction Character. Name of dimensional reduction to use. Default "umap"
 #' @param k Integer. Number of nearest neighbors. Default 15
 #' @param knn.outlier.th Numeric. Threshold for outlier detection. Default 2
 #' @param outlier.frac.th Numeric. Fraction threshold for outlier cells. Default 0.5
-#' @param color_by Character. Column name in meta.data for node coloring. Default NULL
-#' @param hull_by Character. Column name in meta.data for hull grouping. Default NULL
+#' @param color_by DEPRECATED. Use assign_cluster_groups(group_type = "color") instead
+#' @param hull_by DEPRECATED. Use assign_cluster_groups(group_type = "hull") instead
 #'
 #' @return A list with class "constellation_knn" containing:
 #'   \item{knn.result}{Raw KNN results from RANN::nn2}
 #'   \item{knn.cl.df}{Data frame of cluster-to-cluster edge information}
-#'   \item{cluster_info}{Data frame with cluster metadata}
+#'   \item{cluster_info}{Data frame with cluster metadata (id, label, size)}
 #'   \item{params}{List of parameters used}
 #'
 #' @export
@@ -32,7 +35,10 @@ NULL
 #'
 #' @examples
 #' \dontrun{
+#' # New workflow (recommended)
 #' knn_graph <- build_knn_graph(seu, cluster_col = "celltype", reduction = "umap")
+#'
+#' # Old workflow (deprecated but still works)
 #' knn_graph <- build_knn_graph(seu, cluster_col = "celltype", color_by = "cell_class")
 #' }
 build_knn_graph <- function(seu,
@@ -58,12 +64,29 @@ build_knn_graph <- function(seu,
                paste(names(seu@reductions), collapse = ", ")))
   }
 
-  if (!is.null(color_by) && !color_by %in% colnames(seu@meta.data)) {
-    stop(paste("Column", color_by, "not found in meta.data"))
+  # Deprecation warnings
+  if (!is.null(color_by)) {
+    warning(
+      "The 'color_by' parameter is deprecated.\n",
+      "Please use: knn_graph %>% assign_cluster_groups(seu, group_by = '", color_by, "', group_type = 'color')\n",
+      "The color_group will still be added for backward compatibility, but this behavior will be removed in a future version.",
+      call. = FALSE
+    )
+    if (!color_by %in% colnames(seu@meta.data)) {
+      stop(paste("Column", color_by, "not found in meta.data"))
+    }
   }
 
-  if (!is.null(hull_by) && !hull_by %in% colnames(seu@meta.data)) {
-    stop(paste("Column", hull_by, "not found in meta.data"))
+  if (!is.null(hull_by)) {
+    warning(
+      "The 'hull_by' parameter is deprecated.\n",
+      "Please use: knn_graph %>% assign_cluster_groups(seu, group_by = '", hull_by, "', group_type = 'hull')\n",
+      "The hull_group will still be added for backward compatibility, but this behavior will be removed in a future version.",
+      call. = FALSE
+    )
+    if (!hull_by %in% colnames(seu@meta.data)) {
+      stop(paste("Column", hull_by, "not found in meta.data"))
+    }
   }
 
   rd.dat <- Seurat::Embeddings(seu, reduction = reduction)

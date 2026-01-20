@@ -1,8 +1,8 @@
 Package: seuratConstellation
 Title: Constellation Plot for Seurat V5 Objects
-Version: 0.2.0
+Version: 0.2.1
 Author: Liangxian Developer
-Maintainer: Liangxian Developer <liangxian@example.com>
+Maintainer: Liangxian Developer <lx964953350@163.com>
 Description: A pipeline-style toolkit for creating constellation plots from Seurat V5
     objects. Visualizes cell type relationships based on KNN graph analysis with
     customizable node sizes, edge widths, and color schemes.
